@@ -1,11 +1,15 @@
-%define   EXIT_CODE   60
-%define   NEWLINE     10
-%define   NULL        0
-%define   SEMICOLON   59
-%define   BUFFER_SIZE 256
-%define   STDOUT      1
-%define   STDERR      2
-%define   WRITE_CALL  1
+%define   EXIT_CODE       60
+%define   NEWLINE         10
+%define   NULL            0
+%define   SEMICOLON       59
+%define   BUFFER_SIZE     256
+%define   STDOUT          1
+%define   STDERR          2
+%define   WRITE_CALL      1
+%define   FILE_OPEN_CALL  2
+%define   O_RDONLY        0
+%define   PROT_READ       0x1
+%define   MAP_PRIVATE     0x2
 
 global _start
 ; TODO:
@@ -24,6 +28,7 @@ section .rodata
   err_args  db  'wrong number of args!', NEWLINE, NULL
   help_msg  db  'usage: ./main filename.csv', NEWLINE, NULL
   help_arg  db  '--help', NULL
+  err_file  db  'file not exists', NEWLINE, NULL
 
 section .text
 
@@ -93,7 +98,30 @@ section .text
     jnz     wrong_args      ; not exactly one arg -> err mesg and exit
     pop     rdi             ; ./<programm name>
     pop     rdi             ; filename.csv
-    mov     rsi, STDOUT
     call    parse_arg
-    call    exit
+    .open_file: ; rdi - pointer to filename, rsi - flags
+      xor     rdx, rdx
+      xor     rsi, rsi
+      mov     rax, FILE_OPEN_CALL
+      syscall
+      cmp     rax, 0
+      js      .error_open          ; error while opening file (not exists probably)
+      jmp     .success_open
+    .error_open:
+      mov     rdi, err_file
+      call    print_text
+    .success_open:
+      mov     r8, rax
+      mov     rax, 9                ; mmap number
+      mov     rdi, 0                ; operating system will choose mapping destination
+      mov     rsi, 4096             ; page size
+      mov     rdx, PROT_READ        ; new memory region will be marked read only
+      mov     r10, MAP_PRIVATE      ; pages will not be shared
+      mov     r9, 0                 ; offset inside test.txt
+      syscall                       ; now rax will point to mapped location
+      mov     rdi, rax      ; TODO: remove
+      mov     rsi, STDOUT   ; remove
+      call    print_text    ; remove
+    .end:
+      call    exit
 

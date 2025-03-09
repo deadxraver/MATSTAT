@@ -1,6 +1,11 @@
-%define   EXIT_CODE 60
-%define   NEWLINE   10
-%define   NULL      0
+%define   EXIT_CODE   60
+%define   NEWLINE     10
+%define   NULL        0
+%define   SEMICOLON   59
+%define   BUFFER_SIZE 256
+%define   STDOUT      1
+%define   STDERR      2
+%define   WRITE_CALL  1
 
 global _start
 ; TODO:
@@ -12,7 +17,8 @@ global _start
 ; - выборочная медиана
 ; - выборочная квантиль порядка 2/5
 section .data
-  buffer    db    256
+  buffer    times BUFFER_SIZE db 0
+  sim_colon db 0
 
 section .rodata
   err_args  db  'wrong number of args!', NEWLINE, NULL
@@ -22,29 +28,57 @@ section .rodata
 section .text
 
   exit: ; err_code in rdi
-    mov     rax, exit_code  ; exit syscall
+    mov     rax, EXIT_CODE  ; exit syscall
     syscall
 
   wrong_args:
-    ; TODO: print err_args
-    mov     rdi, -1
+    mov     rdi, err_args   ; pass string pointer
+    mov     rsi, STDERR
+    call    print_text
   print_help_and_stop:
-    ; TODO: print help_msg
+    mov     rdi, help_msg
+    mov     rsi, STDOUT
+    call    print_text
     call    exit
 
-  print_text:
-    ; TODO: print until null-terminator
+  print_newline:
+    sub     rsp, 8
+    mov     byte [rsp], NEWLINE
+	  mov     rax, WRITE_CALL
+	  mov     rsi, rsp
+	  mov     rdi, STDOUT
+	  mov     rdx, 1  ; length of 1 char = 1
+	  syscall
+    add     rsp, 8
+	  ret
+
+
+  print_text: ; rdi - str pointer, rsi - stderr/stdout
+    xor     rax, rax                  ; str_len = 0
+    .loop:
+      cmp     byte [rax + rdi], NULL  ; check for null-term
+      je      .end                    ; null -> line ended
+      inc     rax                     ; str_len++
+      jmp     .loop
+    .end:
+    mov     rdx, rax                ; save str_len for syscall
+    mov     rax, WRITE_CALL
+    push    rdi
+    mov     rdi, rsi                ; stderr/stdout
+    pop     rsi
+    syscall                         ; rsi - pointer, rax - syscall code, rdi - stderr/stdout, rdx - length
     ret
 
-  parse_args:
-    pop     ebx             ; argc
-    dec     ebx             ; argc - 1
-    beqz    ebx, wrong_args ; if no args -> print err msg
-    dec     ebx             ; argc - 1
-    bnz     ebx, wrong_args ; if not exactly one arg -> err msg
-    pop     ebx             ; ./<program-name>
-
   _start:
-    xor   rdi, rdi
-    call  exit
+    pop     rax             ; argc
+    dec     rax             ; argc--
+    jz      wrong_args      ; no args -> err mesg and exit
+    dec     rax             ; argc--
+    jnz     wrong_args      ; not exactly one arg -> err mesg and exit
+    pop     rdi             ; ./<programm name>
+    pop     rdi             ; filename.csv
+    mov     rsi, STDOUT
+    call    print_text
+    call    print_newline
+    call    exit
 

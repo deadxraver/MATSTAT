@@ -21,14 +21,27 @@ global _start
 ; - выборочная медиана
 ; - выборочная квантиль порядка 2/5
 section .data
-  buffer    times BUFFER_SIZE db 0
-  sim_colon db 0
+  buffer        times BUFFER_SIZE db 0
+  sim_colon     db  0
+  target_column_sim:
+    .name   db  'dual_sim', 0
+    .index  db  0
+    .result dq  0
+  target_column_3g:
+    .name   db  'three_g', 0
+    .index  db  0
+    .result dq  0
+  target_column_cpu:
+    .name   db  'n_cores', 0
+    .index  db  0
+    .result dq  0
 
 section .rodata
-  err_args  db  'wrong number of args!', NEWLINE, NULL
-  help_msg  db  'usage: ./main filename.csv', NEWLINE, NULL
-  help_arg  db  '--help', NULL
-  err_file  db  'file not exists', NEWLINE, NULL
+  err_args          db  'wrong number of args!', NEWLINE, NULL
+  help_msg          db  'usage: ./main filename.csv', NEWLINE, NULL
+  help_arg          db  '--help', NULL
+  err_file          db  'file not exists', NEWLINE, NULL
+
 
 section .text
 
@@ -114,7 +127,7 @@ section .text
       mov     r8, rax
       mov     rax, 9                ; mmap number
       mov     rdi, 0                ; operating system will choose mapping destination
-      mov     rsi, 4096             ; page size
+      mov     rsi, 128000           ; page size
       mov     rdx, PROT_READ        ; new memory region will be marked read only
       mov     r10, MAP_PRIVATE      ; pages will not be shared
       mov     r9, 0                 ; offset inside test.txt
@@ -122,6 +135,8 @@ section .text
       mov     rdi, rax      ; TODO: remove
       mov     rsi, STDOUT   ; remove
       call    print_text    ; remove
+    .skip_first_string:
+      ; TODO: ну по фигне осталось
     .end:
       call    exit
 

@@ -69,6 +69,22 @@ section .text
     syscall                         ; rsi - pointer, rax - syscall code, rdi - stderr/stdout, rdx - length
     ret
 
+  parse_arg: ; rdi - pointer to arg str
+    xor     rcx, rcx
+    xor     rax, rax
+    .loop:
+      mov   al, byte [rdi + rcx]
+      cmp   al, byte [help_arg + rcx]
+      jne   .not_help
+      cmp   al, NULL                  ; null term -> stop
+      je    .is_help
+      inc   rcx
+      jmp   .loop
+    .not_help:
+      ret
+    .is_help:
+      call print_help_and_stop
+
   _start:
     pop     rax             ; argc
     dec     rax             ; argc--
@@ -78,7 +94,6 @@ section .text
     pop     rdi             ; ./<programm name>
     pop     rdi             ; filename.csv
     mov     rsi, STDOUT
-    call    print_text
-    call    print_newline
+    call    parse_arg
     call    exit
 

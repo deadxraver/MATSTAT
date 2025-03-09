@@ -41,5 +41,10 @@ section .text
     dec     ebx             ; argc - 1
     beqz    ebx, wrong_args ; if no args -> print err msg
     dec     ebx             ; argc - 1
-    bnz     ebx             ; if not exactly one arg -> err msg
+    bnz     ebx, wrong_args ; if not exactly one arg -> err msg
     pop     ebx             ; ./<program-name>
+
+  _start:
+    xor   rdi, rdi
+    call  exit
+

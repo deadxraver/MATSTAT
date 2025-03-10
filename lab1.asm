@@ -141,6 +141,8 @@ section .text
     .error_open:
       mov     rdi, err_file
       call    print_text
+      mov     rdi, -1
+      call    exit
     .success_open:
       mov     r8, rax
       mov     rax, 9                ; mmap number

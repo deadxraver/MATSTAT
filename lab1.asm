@@ -8,8 +8,10 @@
 %define   WRITE_CALL      1
 %define   FILE_OPEN_CALL  2
 %define   O_RDONLY        0
-%define   PROT_READ       0x1
-%define   MAP_PRIVATE     0x2
+%define   PROT_READ       1
+%define   MAP_PRIVATE     2
+%define   MMAP_CALL       9
+%define   MAX_FILESIZE    130000
 
 global _start
 ; TODO:
@@ -145,13 +147,13 @@ section .text
       call    exit
     .success_open:
       mov     r8, rax
-      mov     rax, 9                ; mmap number
+      mov     rax, MMAP_CALL        ; syscall code
       mov     rdi, 0                ; operating system will choose mapping destination
-      mov     rsi, 128000           ; page size
+      mov     rsi, MAX_FILESIZE     ; page size
       mov     rdx, PROT_READ        ; new memory region will be marked read only
       mov     r10, MAP_PRIVATE      ; pages will not be shared
-      mov     r9, 0                 ; offset inside test.txt
-      syscall                       ; now rax will point to mapped location
+      mov     r9, 0                 ; offset inside input file
+      syscall                       ; rax - pointer to mapped file
       mov     rdi, rax
       xor     rax, rax
       xor     r9, r9                ; index

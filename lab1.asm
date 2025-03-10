@@ -39,6 +39,7 @@ section .data
     .result dq  0
 
 section .rodata
+  sglypa            db  'Сглыпа друг артема королева', NEWLINE, NULL
   err_args          db  'wrong number of args!', NEWLINE, NULL
   help_msg          db  'usage: ./main filename.csv', NEWLINE, NULL
   help_arg          db  '--help', NULL
@@ -124,6 +125,9 @@ section .text
       call print_help_and_stop
 
   _start:
+    mov     rdi, sglypa
+    mov     rsi, STDOUT
+    call    print_text
     pop     rax             ; argc
     dec     rax             ; argc--
     jz      wrong_args      ; no args -> err mesg and exit

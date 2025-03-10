@@ -87,6 +87,24 @@ section .text
     syscall                         ; rsi - pointer, rax - syscall code, rdi - stderr/stdout, rdx - length
     ret
 
+  cmp_strings: ; rdi - 1st pointer, rsi - second
+    xor     rax, rax
+    xor     r10, r10
+    .loop:
+      mov     r10b, byte [rdi + rax]
+      cmp     r10b, byte [rsi + rax]
+      jne     .end_not_equal        ; any byte not equal -> not equal
+      cmp     r10b, NULL            ; NULL-term -> equal
+      je      .end_equal
+    .end_not_equal:
+      cmp     r10b, SEMICOLON
+      je      .end_equal
+      xor     rax, rax
+      ret
+    .end_equal:
+      mov     rax, 1
+      ret
+
   parse_arg: ; rdi - pointer to arg str
     xor     rcx, rcx
     xor     rax, rax
@@ -132,11 +150,44 @@ section .text
       mov     r10, MAP_PRIVATE      ; pages will not be shared
       mov     r9, 0                 ; offset inside test.txt
       syscall                       ; now rax will point to mapped location
-      mov     rdi, rax      ; TODO: remove
-      mov     rsi, STDOUT   ; remove
-      call    print_text    ; remove
+      mov     rdi, rax
+      xor     rax, rax
+      xor     r9, r9                ; index
     .skip_first_string:
-      ; TODO: ну по фигне осталось
+      inc     r9
+      cmp     byte [rax + rdi], NEWLINE   ; move until newline 
+      je      .end_skip
+      push    rax
+      test    rax, rax                    ; if rax == 0 compare *rax with str
+      jz      .cmp_sim
+      cmp     byte [rax + rdi], SEMICOLON ; or *rax = ';', compare *(rax + 1) with str
+      je      .cmp_strs
+      .cmp_strs:
+        lea     rax, [rax + 8]
+      .cmp_sim:
+        mov     rsi, target_column_sim.name
+        lea     rdi, [rdi + rax]
+        call    cmp_strings
+        test    rax, rax
+        jz      .cmp_3g
+        mov     byte [target_column_sim.index], r9b
+      .cmp_3g:
+        mov     rsi, target_column_3g.name
+        call    cmp_strings
+        test    rax, rax
+        jz      .cmp_cpu
+        mov     byte [target_column_3g.index], r9b
+      .cmp_cpu:
+        mov     rsi, target_column_cpu.name
+        call    cmp_strings
+        test    rax, rax
+        mov     byte [target_column_cpu.index], r9b
+      .end_cmp:
+        pop     rax
+        jmp     .skip_first_string
+    .end_skip:
+      lea     rax, [rax + 8]
+    ; TODO: 
     .end:
       call    exit
 

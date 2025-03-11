@@ -192,6 +192,7 @@ section .text
         mov     byte [target_column_cpu.index], r9b
       .end_cmp:
         pop     rax
+        lea     rax, [rax + 8]              ; i++
         jmp     .skip_first_string
     .end_skip:
       lea     rax, [rax + 8]
